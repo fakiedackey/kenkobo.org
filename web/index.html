@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KENKOBO — Quantitative Engineering</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:#050507}
+  body{display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;transition:opacity 0.65s ease-out}
+  body.leaving{opacity:0}
+  canvas{display:block;cursor:pointer}
+
+  /* Press-to-begin overlay (guarantees audio on every browser/origin) */
+  #begin{
+    position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:#050507;z-index:10;cursor:pointer;
+    transition:opacity 0.55s ease-out;
+  }
+  #begin.fading{opacity:0;pointer-events:none}
+  #begin .label{
+    font:600 18px/1 'Courier New',monospace;
+    letter-spacing:6px;color:rgba(255,80,60,0.9);text-transform:uppercase;
+    text-shadow:0 0 12px rgba(255,70,50,0.55);
+    animation:pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{opacity:0.55}
+    50%{opacity:1}
+  }
+
+  #hint{position:fixed;bottom:36px;left:50%;transform:translateX(-50%);color:rgba(255,80,60,0.55);font:14px/1 'Courier New',monospace;letter-spacing:4px;text-transform:uppercase;pointer-events:none;opacity:0;transition:opacity 0.8s;text-shadow:0 0 10px rgba(255,70,50,0.35)}
+  #skip{position:fixed;top:22px;right:24px;color:rgba(232,230,225,0.4);font:11px/1 'Courier New',monospace;letter-spacing:2px;text-transform:uppercase;text-decoration:none;padding:8px 12px;border:1px solid rgba(232,230,225,0.18);transition:color 0.3s, border-color 0.3s;z-index:20}
+  #skip:hover{color:rgba(255,80,60,0.9);border-color:rgba(255,80,60,0.5)}
+
+  @media (prefers-reduced-motion: reduce){
+    #begin .label{animation:none}
+    #hint{opacity:1 !important}
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<a id="skip" href="main.html">skip →</a>
+<div id="hint">click to enter</div>
+<div id="begin" role="button" tabindex="0" aria-label="Click to start the intro">
+  <div class="label">▶ Click to begin</div>
+</div>
+<script>
+(() => {
+const WORD = 'KENKOBO';
+// Base unscaled metrics (preserved from simply-logo.html for geometry parity)
+const SW_BASE = 52, SH_BASE = 84, LW_BASE = 4.2, INS_BASE = 5, VIS_GAP_BASE = 16;
+// Sizing target: KENKOBO should span this fraction of the viewport width.
+const TARGET_WORD_VW = 0.62;
+const MIN_TARGET_W = 380;
+const MAX_TARGET_W = 1200;
+const BASE_TOTAL_W = WORD.length * SW_BASE + (WORD.length - 1) * VIS_GAP_BASE; // 7*52 + 6*16 = 460
+
+const cvs = document.getElementById('c');
+const ctx = cvs.getContext('2d');
+let W, H, DPR, SCALE = 1;
+let SW, SH, LW, INS, VIS_GAP;
+
+function applyScale() {
+  const target = Math.max(MIN_TARGET_W, Math.min(W * TARGET_WORD_VW, MAX_TARGET_W));
+  SCALE = target / BASE_TOTAL_W;
+  // Also clamp by viewport height so very wide-short windows don't blow it up
+  const maxByHeight = (H * 0.6) / SH_BASE;
+  if (SCALE > maxByHeight) SCALE = maxByHeight;
+  if (SCALE < 0.9) SCALE = 0.9;
+  SW = SW_BASE * SCALE;
+  SH = SH_BASE * SCALE;
+  LW = LW_BASE * SCALE;
+  INS = INS_BASE * SCALE;
+  VIS_GAP = VIS_GAP_BASE * SCALE;
+}
+
+function resize() {
+  DPR = devicePixelRatio || 1;
+  W = innerWidth; H = innerHeight;
+  cvs.width = W*DPR; cvs.height = H*DPR;
+  cvs.style.width = W+'px'; cvs.style.height = H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  applyScale();
+  if (running) build();
+}
+
+function segPts(s) {
+  const w=SW, h=SH, m=h/2, n=INS;
+  const o = SCALE;  // small offsets scale with the rest
+  return {
+    a:[[n,0],[w-n,0]], b:[[w,n],[w,m-n]], c:[[w,m+n],[w,h-n]],
+    d:[[n,h],[w-n,h]], e:[[0,m+n],[0,h-n]], f:[[0,n],[0,m-n]],
+    g1:[[n,m],[w/2-2*o,m]], g2:[[w/2+2*o,m],[w-n,m]],
+    g:[[n,m],[w-n,m]],     // full-width middle bar (used by B — one continuous stroke)
+    h:[[n+1*o,n+1*o],[w/2-2*o,m-2*o]], i:[[w/2,n],[w/2,m-n]],
+    j:[[w-n-1*o,n+1*o],[w/2+2*o,m-2*o]], k:[[n+1*o,h-n-1*o],[w/2-2*o,m+2*o]],
+    l:[[w/2,m+n],[w/2,h-n]], m:[[w-n-1*o,h-n-1*o],[w/2+2*o,m+2*o]],
+    // Added for KENKOBO:
+    // N diagonal split into two short bars with a mid-gap, mirroring f/e style
+    n1a:[[0,n+1*o],[w/2-3*o,m-4*o]],
+    n1b:[[w/2+3*o,m+4*o],[w,h-n-1*o]],
+    k1:[[0,m],[w-n,0]],
+    k2:[[0,m],[w-n,h]],
+  }[s];
+}
+
+const ALL = 'a b c d e f g1 g2 g k1 k2 n1a n1b'.split(' ');
+
+const CM = {
+  K:['f','e','k1','k2'],
+  E:['a','f','e','g1','g2','d'],
+  N:['f','e','b','c','n1a','n1b'],
+  O:['a','b','c','d','e','f'],
+  B:['a','b','c','d','e','f','g'],
+};
+
+function getBounds(ch) {
+  return ({
+    K:[0, SW-INS], E:[0, SW-INS],
+    N:[0, SW], O:[0, SW], B:[0, SW],
+  })[ch] || [0, SW];
+}
+
+const KERN_PAIRS = { 'KE': -2, 'NK': -2 };
+
+const T = { FI:0, FE:0.7, PS:0.7, PE:2.0, SS:2.0, SE:3.4, GLOW:3.8, HOLD:4.5 };
+
+let letters=[], deadSegs=[], masterX, masterY;
+
+function build() {
+  letters=[]; deadSegs=[];
+  masterX=(W-SW)/2; masterY=(H-SH)/2;
+
+  const usedSet = new Set();
+  const positions = [];
+  let cursor = 0;
+
+  for (let ci=0; ci<WORD.length; ci++) {
+    const ch = WORD[ci];
+    const b = getBounds(ch);
+    const charSegs = CM[ch] || [];
+    for (const s of charSegs) usedSet.add(s);
+
+    if (ci === 0) {
+      cursor = -b[0];
+    } else {
+      const prevCh = WORD[ci-1];
+      const prevB = getBounds(prevCh);
+      const pair = prevCh + ch;
+      const kern = (KERN_PAIRS[pair] || 0) * SCALE;
+      cursor = positions[ci-1] + prevB[1] + VIS_GAP + kern - b[0];
+    }
+    positions.push(cursor);
+  }
+
+  const lastB = getBounds(WORD[WORD.length-1]);
+  const firstB = getBounds(WORD[0]);
+  const totalVisW = positions[positions.length-1] + lastB[1] - (positions[0] + firstB[0]);
+  const firstVisLeft = positions[0] + firstB[0];
+  const offsetX = (W - totalVisW) / 2 - firstVisLeft;
+  const oy = (H-SH)/2;
+
+  for (let ci=0; ci<WORD.length; ci++) {
+    const charSegs = CM[WORD[ci]] || [];
+    const dstX = positions[ci] + offsetX;
+    const distFromCenter = Math.abs(ci - (WORD.length-1)/2);
+    letters.push({ segs:charSegs, srcX:masterX, dstX, y:oy, delay:distFromCenter*0.06 });
+  }
+  for (const s of ALL) { if(!usedSet.has(s)) deadSegs.push(s); }
+}
+
+const easeOut = t => 1-(1-t)**3;
+const easeIn  = t => t*t*t;
+const easeIO  = t => t<.5 ? 4*t*t*t : 1-(-2*t+2)**3/2;
+const clamp   = (v,lo,hi) => Math.max(lo,Math.min(hi,v));
+
+function drawSeg(x1,y1,x2,y2,alpha,glow) {
+  if(alpha<0.01) return;
+  ctx.save();
+  ctx.globalAlpha=Math.min(1,alpha);
+  ctx.lineCap='butt';
+  ctx.lineWidth=LW+2*SCALE;
+  ctx.strokeStyle=`rgba(255,50,40,${alpha*0.3*glow})`;
+  ctx.shadowColor=`rgba(255,70,50,${glow*0.9})`;
+  ctx.shadowBlur=(14+glow*12)*SCALE;
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  ctx.shadowBlur=6*SCALE;
+  ctx.lineWidth=LW;
+  ctx.strokeStyle=`rgba(255,45,35,${alpha})`;
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  ctx.shadowBlur=0;
+  ctx.lineWidth=LW*0.35;
+  ctx.strokeStyle=`rgba(255,190,180,${alpha*0.55})`;
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  ctx.restore();
+}
+
+function drawCell(segList,cx,cy,alpha,glow) {
+  for(const s of segList){const p=segPts(s);drawSeg(p[0][0]+cx,p[0][1]+cy,p[1][0]+cx,p[1][1]+cy,alpha,glow);}
+}
+
+// ─── AUDIO: cyberpunk buzz + crystalline chime ───
+function playAudio() {
+  try {
+    const ac=new(AudioContext||webkitAudioContext)();
+    // Safari on localhost may have it suspended even after gesture — resume explicitly
+    if (ac.state === 'suspended') ac.resume();
+    const now=ac.currentTime;
+
+    // Reverb
+    const convLen=ac.sampleRate*2.5;
+    const convBuf=ac.createBuffer(2,convLen,ac.sampleRate);
+    for(let ch=0;ch<2;ch++){const d=convBuf.getChannelData(ch);for(let i=0;i<convLen;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/convLen,2.5)*0.25;}
+    const conv=ac.createConvolver();conv.buffer=convBuf;
+    const rg=ac.createGain();rg.gain.value=0.2;conv.connect(rg).connect(ac.destination);
+    const dry=ac.createGain();dry.gain.value=0.7;dry.connect(ac.destination);dry.connect(conv);
+
+    // ═══ BUZZ LAYER ═══
+    const bz1=ac.createOscillator();bz1.type='sawtooth';
+    bz1.frequency.setValueAtTime(55,now);bz1.frequency.exponentialRampToValueAtTime(110,now+2.5);
+    const bz1f=ac.createBiquadFilter();bz1f.type='lowpass';bz1f.Q.value=4;
+    bz1f.frequency.setValueAtTime(180,now);bz1f.frequency.exponentialRampToValueAtTime(1200,now+1.8);
+    bz1f.frequency.exponentialRampToValueAtTime(300,now+3.5);
+    const bz1g=ac.createGain();
+    bz1g.gain.setValueAtTime(0,now);bz1g.gain.linearRampToValueAtTime(0.09,now+0.6);
+    bz1g.gain.linearRampToValueAtTime(0.07,now+2);bz1g.gain.linearRampToValueAtTime(0,now+4.5);
+    bz1.connect(bz1f).connect(bz1g).connect(dry);bz1.start(now);bz1.stop(now+4.6);
+
+    const bz2=ac.createOscillator();bz2.type='sawtooth';
+    bz2.frequency.setValueAtTime(55.3,now);bz2.frequency.exponentialRampToValueAtTime(110.5,now+2.5);
+    const bz2g=ac.createGain();
+    bz2g.gain.setValueAtTime(0,now);bz2g.gain.linearRampToValueAtTime(0.05,now+0.6);
+    bz2g.gain.linearRampToValueAtTime(0.04,now+2);bz2g.gain.linearRampToValueAtTime(0,now+4.5);
+    bz2.connect(bz1f);
+    bz2.start(now);bz2.stop(now+4.6);
+
+    const drone=ac.createOscillator();drone.type='square';
+    drone.frequency.setValueAtTime(27.5,now);
+    const droneF=ac.createBiquadFilter();droneF.type='lowpass';droneF.frequency.value=120;droneF.Q.value=1;
+    const droneG=ac.createGain();
+    droneG.gain.setValueAtTime(0,now);droneG.gain.linearRampToValueAtTime(0.06,now+0.8);
+    droneG.gain.linearRampToValueAtTime(0.04,now+2.5);droneG.gain.linearRampToValueAtTime(0,now+4.5);
+    drone.connect(droneF).connect(droneG).connect(ac.destination);drone.start(now);drone.stop(now+4.6);
+
+    // ═══ HIGH SHIMMER ═══
+    const shimF=[3520,4186,5274];
+    for(let i=0;i<shimF.length;i++){
+      const o=ac.createOscillator();o.type='sine';o.frequency.value=shimF[i];o.detune.value=(Math.random()-0.5)*15;
+      const g=ac.createGain();g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(0,now+0.5);
+      g.gain.linearRampToValueAtTime(0.010,now+1.5);g.gain.linearRampToValueAtTime(0.006,now+2);
+      g.gain.exponentialRampToValueAtTime(0.0001,now+4.5);
+      o.connect(g).connect(dry);o.start(now);o.stop(now+4.6);
+    }
+
+    // ═══ SPLIT MOMENT: chime + buzz swell ═══
+    const ct=now+2.0;
+    const chF=[1760,2093,2637,3520,4186],chA=[0.07,0.05,0.04,0.035,0.025],chD=[2.5,2,1.5,1.2,0.8];
+    for(let i=0;i<chF.length;i++){
+      const o=ac.createOscillator();o.type='sine';o.frequency.value=chF[i];o.detune.value=(Math.random()-0.5)*6;
+      const g=ac.createGain();g.gain.setValueAtTime(0,ct);g.gain.linearRampToValueAtTime(chA[i],ct+0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001,ct+chD[i]);
+      o.connect(g).connect(dry);o.start(ct);o.stop(ct+chD[i]+0.1);
+    }
+
+    const nLen=ac.sampleRate*0.06,nBuf=ac.createBuffer(1,nLen,ac.sampleRate),nd=nBuf.getChannelData(0);
+    for(let i=0;i<nLen;i++)nd[i]=Math.random()*2-1;
+    const ns=ac.createBufferSource();ns.buffer=nBuf;
+    const nf=ac.createBiquadFilter();nf.type='bandpass';nf.frequency.value=6000;nf.Q.value=5;
+    const ng=ac.createGain();ng.gain.setValueAtTime(0.1,ct);ng.gain.exponentialRampToValueAtTime(0.001,ct+0.08);
+    ns.connect(nf).connect(ng).connect(dry);ns.start(ct);ns.stop(ct+0.1);
+
+    const bsw=ac.createOscillator();bsw.type='sawtooth';
+    bsw.frequency.setValueAtTime(110,ct);bsw.frequency.exponentialRampToValueAtTime(55,ct+0.6);
+    const bswF=ac.createBiquadFilter();bswF.type='lowpass';bswF.frequency.value=600;bswF.Q.value=3;
+    const bswG=ac.createGain();
+    bswG.gain.setValueAtTime(0.12,ct);bswG.gain.exponentialRampToValueAtTime(0.001,ct+0.7);
+    bsw.connect(bswF).connect(bswG).connect(ac.destination);bsw.start(ct);bsw.stop(ct+0.8);
+
+    const sub=ac.createOscillator();sub.type='sine';
+    sub.frequency.setValueAtTime(80,ct);sub.frequency.exponentialRampToValueAtTime(30,ct+0.4);
+    const subg=ac.createGain();
+    subg.gain.setValueAtTime(0.2,ct);subg.gain.exponentialRampToValueAtTime(0.001,ct+0.5);
+    sub.connect(subg).connect(ac.destination);sub.start(ct);sub.stop(ct+0.6);
+  }catch(e){}
+}
+
+let t0=null, running=false;
+
+function frame(ts) {
+  if(!running) return;
+  if(!t0) t0=ts;
+  const t=(ts-t0)/1000;
+  ctx.clearRect(0,0,W,H);
+
+  const vg=ctx.createRadialGradient(W/2,H/2,H*0.15,W/2,H/2,H*0.85);
+  vg.addColorStop(0,'rgba(8,5,10,0)');vg.addColorStop(1,'rgba(3,2,5,0.75)');
+  ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(0,0,0,0.04)';
+  for(let y=0;y<H;y+=3) ctx.fillRect(0,y,W,1);
+
+  if(t<T.SS+0.3){
+    const fadeA=easeOut(clamp((t-T.FI)/(T.FE-T.FI),0,1));
+    const pt=clamp((t-T.PS)/(T.PE-T.PS),0,1);
+    const pulse=1+0.35*Math.sin(pt*Math.PI*3.5)*(1-pt*0.7);
+    const sf=t>=T.SS?1-easeIn(clamp((t-T.SS)/0.3,0,1)):1;
+    drawCell(ALL,masterX,masterY,fadeA*sf,pulse*0.6);
+  }
+
+  if(t>=T.SS){
+    const sd=T.SE-T.SS;
+    for(const lt of letters){
+      const p=easeIO(clamp((t-T.SS-lt.delay)/sd,0,1));
+      const cx=lt.srcX+(lt.dstX-lt.srcX)*p;
+      drawCell(lt.segs,cx,lt.y,0.3+0.7*p,0.2+0.6*p);
+    }
+    const df=1-easeIn(clamp((t-T.SS)/0.5,0,1));
+    if(df>0.01) drawCell(deadSegs,masterX,masterY,df*0.6,0.15*df);
+  }
+
+  if(t>T.SE){
+    const lp=clamp((t-T.SE)/(T.GLOW-T.SE),0,1);
+    const gb=0.5+0.5*Math.sin(lp*Math.PI);
+    const breathe=t>T.GLOW?0.4+0.12*Math.sin(t*1.8):gb;
+    for(const lt of letters) drawCell(lt.segs,lt.dstX,lt.y,1,breathe);
+  }
+
+  document.getElementById('hint').style.opacity=t>T.HOLD?'1':'0';
+  requestAnimationFrame(frame);
+}
+
+function start(){
+  running=false;t0=null;
+  build();running=true;
+  playAudio();
+  requestAnimationFrame(frame);
+}
+
+resize();
+addEventListener('resize', resize);
+
+// ─── Flow: press-to-begin → animation+audio → click-to-enter ───
+const beginEl = document.getElementById('begin');
+let started = false;
+let entered = false;
+
+function beginAnimation() {
+  if (started) return;
+  started = true;
+  beginEl.classList.add('fading');
+  setTimeout(() => { beginEl.style.display = 'none'; }, 600);
+  start();
+  // Auto-enter after the animation completes + a brief hold so the user
+  // sees KENKOBO breathing for a moment before the page transition.
+  const AUTO_ENTER_AFTER = (T.HOLD + 1.8) * 1000;
+  setTimeout(enterSite, AUTO_ENTER_AFTER);
+}
+
+function enterSite() {
+  if (entered) return;
+  entered = true;
+  document.body.classList.add('leaving');
+  setTimeout(() => { location.href = 'main.html'; }, 680);
+}
+
+beginEl.addEventListener('click', beginAnimation);
+beginEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); beginAnimation(); }
+});
+
+cvs.addEventListener('click', () => {
+  if (!started) return;        // canvas clicks only matter after begin
+  enterSite();
+});
+
+document.getElementById('skip').addEventListener('click', (e) => {
+  e.preventDefault();
+  enterSite();
+});
+
+// Focus the begin button so keyboard works
+beginEl.focus();
+})();
+</script>
+</body>
+</html>

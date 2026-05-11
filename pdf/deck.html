@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Kenkobo Development — Pitch Deck</title>
+<style>
+/* ─── print page ─── */
+@page {
+  size: 297mm 210mm;
+  margin: 0;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg:          #050507;
+  --bg-elev:     #0d0c12;
+  --ink:         #e8e6e1;
+  --ink-dim:     rgba(232, 230, 225, 0.66);
+  --ink-faint:   rgba(232, 230, 225, 0.36);
+  --accent:      rgb(255, 45, 35);
+  --accent-2:    rgb(255, 90, 75);
+  --accent-soft: rgba(255, 50, 40, 0.25);
+  --accent-glow: rgba(255, 70, 50, 0.55);
+  --line:        rgba(232, 230, 225, 0.10);
+
+  --font-mono: 'Courier New', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-body: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+}
+
+html, body {
+  background: #1c1c22;
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.slide {
+  width: 297mm;
+  height: 210mm;
+  background: var(--bg);
+  color: var(--ink);
+  position: relative;
+  overflow: hidden;
+  page-break-after: always;
+  break-after: page;
+  padding: 22mm 28mm;
+  display: flex;
+  flex-direction: column;
+  background-image:
+    radial-gradient(ellipse at top, rgba(255, 50, 40, 0.06), transparent 55%),
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0 1px, transparent 1px 3px);
+}
+.slide:last-child { page-break-after: auto; break-after: auto; }
+
+@media screen {
+  body { padding: 24px 0; }
+  .slide {
+    margin: 0 auto 24px;
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+  }
+}
+
+/* ─── primitives ─── */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11pt;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+  filter: drop-shadow(0 0 6px rgba(255, 70, 50, 0.45));
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  width: fit-content;
+}
+.eyebrow::before {
+  content: '';
+  width: 26px;
+  height: 2px;
+  background: var(--accent);
+  filter: drop-shadow(0 0 4px rgba(255, 70, 50, 0.5));
+}
+
+h1 {
+  font-size: 38pt;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.04;
+  margin-bottom: 14pt;
+  color: var(--ink);
+}
+h2 {
+  font-size: 26pt;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  margin-bottom: 10pt;
+  color: var(--ink);
+}
+h3 {
+  font-size: 14pt;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+}
+p, li { font-size: 12pt; line-height: 1.55; color: var(--ink-dim); }
+strong { color: var(--ink); font-weight: 500; }
+.accent { color: var(--accent); }
+
+/* ─── slide footer ─── */
+.slide-footer {
+  position: absolute;
+  left: 28mm;
+  right: 28mm;
+  bottom: 10mm;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 8.5pt;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.slide-footer .sep { color: var(--accent); margin: 0 8px; opacity: 0.55; }
+
+/* ─── slide 1: cover ─── */
+.cover {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.cover .wordmark {
+  width: 70%;
+  max-width: 220mm;
+  margin: 0 auto 18mm;
+  filter: drop-shadow(0 0 10px rgba(255, 70, 50, 0.45));
+}
+.cover .wordmark g.halo line {
+  stroke: rgba(255, 80, 60, 0.32);
+  stroke-width: 8;
+  stroke-linecap: butt;
+}
+.cover .wordmark g.main line {
+  stroke: var(--accent);
+  stroke-width: 4.2;
+  stroke-linecap: butt;
+}
+.cover .wordmark g.core line {
+  stroke: rgba(255, 220, 210, 0.85);
+  stroke-width: 1.3;
+  stroke-linecap: butt;
+}
+.cover .tagline {
+  font-family: var(--font-mono);
+  font-size: 12pt;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  max-width: 80ch;
+}
+.cover .corner {
+  position: absolute;
+  bottom: 18mm;
+  right: 28mm;
+  font-family: var(--font-mono);
+  font-size: 9pt;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+}
+.cover .corner-left {
+  position: absolute;
+  bottom: 18mm;
+  left: 28mm;
+  width: 60mm;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.55;
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* ─── content layout ─── */
+.slide-body { flex: 1; display: flex; flex-direction: column; }
+.slide-head { margin-bottom: 14pt; }
+.slide-head .eyebrow { margin-bottom: 16pt; }
+.lede { font-size: 13pt; line-height: 1.55; max-width: 75ch; color: var(--ink-dim); }
+
+/* ─── facts row (slide 2) ─── */
+.facts-row {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.facts-row .fact {
+  background: var(--bg);
+  padding: 18pt 22pt;
+}
+.facts-row .label {
+  font-family: var(--font-mono);
+  font-size: 9pt;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8pt;
+}
+.facts-row .value { font-size: 16pt; color: var(--ink); font-weight: 500; line-height: 1.25; }
+
+/* ─── services overview grid (slide 3) ─── */
+.svc-grid {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  flex: 1;
+  max-height: 115mm;
+}
+.svc-grid article {
+  background: var(--bg);
+  padding: 12pt 14pt;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.svc-grid article .tag {
+  font-family: var(--font-mono);
+  font-size: 9.5pt;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+  opacity: 0.8;
+  margin-bottom: 8pt;
+}
+.svc-grid article h3 { font-size: 12.5pt; margin-bottom: 6pt; }
+.svc-grid article p { font-size: 10pt; line-height: 1.5; }
+
+/* ─── deep-dive layout (slides 4-7) ─── */
+.deep {
+  display: grid;
+  grid-template-columns: 0.95fr 1.05fr;
+  gap: 18mm;
+  flex: 1;
+  align-items: stretch;
+  margin-top: 8pt;
+}
+.deep .left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.deep .metric {
+  font-family: var(--font-mono);
+  font-size: 76pt;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+  color: var(--accent);
+  filter: drop-shadow(0 0 14px rgba(255, 70, 50, 0.45));
+  width: fit-content;
+}
+.deep .metric-caption {
+  font-family: var(--font-mono);
+  font-size: 10.5pt;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-top: 12pt;
+  max-width: 38ch;
+  line-height: 1.55;
+}
+.deep .right ul { list-style: none; }
+.deep .right li {
+  padding: 10pt 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 12pt;
+  line-height: 1.55;
+  display: grid;
+  grid-template-columns: 18pt 1fr;
+  gap: 12pt;
+}
+.deep .right li::before {
+  content: '→';
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+.deep .right li:last-child { border-bottom: none; }
+
+/* ─── diagram (slide 5) ─── */
+.diagram {
+  font-family: var(--font-mono);
+  font-size: 10pt;
+  line-height: 1.6;
+  color: var(--ink);
+  background: rgba(255, 70, 50, 0.04);
+  border: 1px solid var(--accent-soft);
+  padding: 14pt 18pt;
+  margin: 10pt 0;
+  white-space: pre;
+  letter-spacing: 0.04em;
+}
+
+/* ─── track record (slide 8) ─── */
+.track {
+  margin-top: 16pt;
+  list-style: none;
+  display: grid;
+  gap: 1px;
+  background: var(--line);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.track li {
+  background: var(--bg);
+  padding: 12pt 14pt;
+  display: grid;
+  grid-template-columns: 130pt 1fr;
+  gap: 22pt;
+  align-items: baseline;
+  font-size: 11pt;
+  line-height: 1.55;
+}
+.track .metric {
+  font-family: var(--font-mono);
+  color: var(--accent);
+  font-size: 11pt;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  filter: drop-shadow(0 0 4px rgba(255, 70, 50, 0.5));
+}
+
+/* ─── chip cloud (slide 9) ─── */
+.chips {
+  margin-top: 24pt;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12pt;
+  align-content: flex-start;
+}
+.chip {
+  font-family: var(--font-mono);
+  font-size: 12pt;
+  letter-spacing: 0.1em;
+  padding: 8pt 14pt;
+  border: 1px solid var(--accent-soft);
+  background: rgba(255, 70, 50, 0.04);
+  color: var(--ink);
+}
+.chip.lg { font-size: 14pt; padding: 10pt 18pt; border-color: var(--accent); color: var(--accent-2); }
+.chip-group { margin-top: 14pt; }
+.chip-group .group-label {
+  font-family: var(--font-mono);
+  font-size: 9.5pt;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 10pt;
+}
+
+/* ─── leadership (slide 10) ─── */
+.leader {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 18mm;
+  margin-top: 10pt;
+  flex: 1;
+}
+.leader .bio { font-size: 11.5pt; line-height: 1.65; color: var(--ink-dim); }
+.leader .bio p + p { margin-top: 10pt; }
+.leader .achievements { display: flex; flex-direction: column; gap: 7pt; }
+.leader .ach {
+  font-family: var(--font-mono);
+  font-size: 10.5pt;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+  border-left: 2px solid var(--accent);
+  padding: 4pt 0 4pt 14pt;
+  background: linear-gradient(to right, rgba(255,70,50,0.05), transparent 70%);
+}
+.leader .ach strong { color: var(--accent-2); margin-right: 8pt; }
+
+/* ─── contact (slide 11) ─── */
+.contact {
+  margin-top: 14pt;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18mm;
+  flex: 1;
+  align-items: center;
+}
+.contact .lhs h1 { font-size: 50pt; line-height: 1; margin-bottom: 16pt; }
+.contact .lhs .sub {
+  font-family: var(--font-mono);
+  font-size: 11pt;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  max-width: 36ch;
+  line-height: 1.6;
+}
+.contact .rhs { display: grid; gap: 14pt; }
+.contact .row {
+  display: grid;
+  grid-template-columns: 80pt 1fr;
+  gap: 18pt;
+  padding-bottom: 12pt;
+  border-bottom: 1px solid var(--line);
+  align-items: baseline;
+}
+.contact .row:last-child { border-bottom: none; }
+.contact .row .label {
+  font-family: var(--font-mono);
+  font-size: 9.5pt;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.contact .row .value { font-size: 15pt; color: var(--ink); font-weight: 500; line-height: 1.3; }
+.contact .row .value.small { font-size: 13pt; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════ SLIDE 1: COVER ══════════════════════ -->
+<section class="slide cover">
+  <svg class="wordmark" viewBox="-6 -6 453 96" xmlns="http://www.w3.org/2000/svg" aria-label="Kenkobo">
+    <g class="halo">
+      <line x1="0" y1="5" x2="0" y2="37"/>
+      <line x1="0" y1="47" x2="0" y2="79"/>
+      <line x1="0" y1="42" x2="47" y2="0"/>
+      <line x1="0" y1="42" x2="47" y2="84"/>
+      <line x1="66" y1="0" x2="108" y2="0"/>
+      <line x1="61" y1="5" x2="61" y2="37"/>
+      <line x1="61" y1="47" x2="61" y2="79"/>
+      <line x1="66" y1="42" x2="85" y2="42"/>
+      <line x1="89" y1="42" x2="108" y2="42"/>
+      <line x1="66" y1="84" x2="108" y2="84"/>
+      <line x1="124" y1="5" x2="124" y2="37"/>
+      <line x1="124" y1="47" x2="124" y2="79"/>
+      <line x1="176" y1="5" x2="176" y2="37"/>
+      <line x1="176" y1="47" x2="176" y2="79"/>
+      <line x1="124" y1="6" x2="147" y2="38"/>
+      <line x1="153" y1="46" x2="176" y2="78"/>
+      <line x1="190" y1="5" x2="190" y2="37"/>
+      <line x1="190" y1="47" x2="190" y2="79"/>
+      <line x1="190" y1="42" x2="237" y2="0"/>
+      <line x1="190" y1="42" x2="237" y2="84"/>
+      <line x1="258" y1="0" x2="300" y2="0"/>
+      <line x1="305" y1="5" x2="305" y2="37"/>
+      <line x1="305" y1="47" x2="305" y2="79"/>
+      <line x1="258" y1="84" x2="300" y2="84"/>
+      <line x1="253" y1="47" x2="253" y2="79"/>
+      <line x1="253" y1="5" x2="253" y2="37"/>
+      <line x1="326" y1="0" x2="368" y2="0"/>
+      <line x1="373" y1="5" x2="373" y2="37"/>
+      <line x1="373" y1="47" x2="373" y2="79"/>
+      <line x1="326" y1="84" x2="368" y2="84"/>
+      <line x1="321" y1="47" x2="321" y2="79"/>
+      <line x1="321" y1="5" x2="321" y2="37"/>
+      <line x1="326" y1="42" x2="368" y2="42"/>
+      <line x1="394" y1="0" x2="436" y2="0"/>
+      <line x1="441" y1="5" x2="441" y2="37"/>
+      <line x1="441" y1="47" x2="441" y2="79"/>
+      <line x1="394" y1="84" x2="436" y2="84"/>
+      <line x1="389" y1="47" x2="389" y2="79"/>
+      <line x1="389" y1="5" x2="389" y2="37"/>
+    </g>
+    <g class="main">
+      <line x1="0" y1="5" x2="0" y2="37"/>
+      <line x1="0" y1="47" x2="0" y2="79"/>
+      <line x1="0" y1="42" x2="47" y2="0"/>
+      <line x1="0" y1="42" x2="47" y2="84"/>
+      <line x1="66" y1="0" x2="108" y2="0"/>
+      <line x1="61" y1="5" x2="61" y2="37"/>
+      <line x1="61" y1="47" x2="61" y2="79"/>
+      <line x1="66" y1="42" x2="85" y2="42"/>
+      <line x1="89" y1="42" x2="108" y2="42"/>
+      <line x1="66" y1="84" x2="108" y2="84"/>
+      <line x1="124" y1="5" x2="124" y2="37"/>
+      <line x1="124" y1="47" x2="124" y2="79"/>
+      <line x1="176" y1="5" x2="176" y2="37"/>
+      <line x1="176" y1="47" x2="176" y2="79"/>
+      <line x1="124" y1="6" x2="147" y2="38"/>
+      <line x1="153" y1="46" x2="176" y2="78"/>
+      <line x1="190" y1="5" x2="190" y2="37"/>
+      <line x1="190" y1="47" x2="190" y2="79"/>
+      <line x1="190" y1="42" x2="237" y2="0"/>
+      <line x1="190" y1="42" x2="237" y2="84"/>
+      <line x1="258" y1="0" x2="300" y2="0"/>
+      <line x1="305" y1="5" x2="305" y2="37"/>
+      <line x1="305" y1="47" x2="305" y2="79"/>
+      <line x1="258" y1="84" x2="300" y2="84"/>
+      <line x1="253" y1="47" x2="253" y2="79"/>
+      <line x1="253" y1="5" x2="253" y2="37"/>
+      <line x1="326" y1="0" x2="368" y2="0"/>
+      <line x1="373" y1="5" x2="373" y2="37"/>
+      <line x1="373" y1="47" x2="373" y2="79"/>
+      <line x1="326" y1="84" x2="368" y2="84"/>
+      <line x1="321" y1="47" x2="321" y2="79"/>
+      <line x1="321" y1="5" x2="321" y2="37"/>
+      <line x1="326" y1="42" x2="368" y2="42"/>
+      <line x1="394" y1="0" x2="436" y2="0"/>
+      <line x1="441" y1="5" x2="441" y2="37"/>
+      <line x1="441" y1="47" x2="441" y2="79"/>
+      <line x1="394" y1="84" x2="436" y2="84"/>
+      <line x1="389" y1="47" x2="389" y2="79"/>
+      <line x1="389" y1="5" x2="389" y2="37"/>
+    </g>
+    <g class="core">
+      <line x1="0" y1="5" x2="0" y2="37"/>
+      <line x1="0" y1="47" x2="0" y2="79"/>
+      <line x1="0" y1="42" x2="47" y2="0"/>
+      <line x1="0" y1="42" x2="47" y2="84"/>
+      <line x1="66" y1="0" x2="108" y2="0"/>
+      <line x1="61" y1="5" x2="61" y2="37"/>
+      <line x1="61" y1="47" x2="61" y2="79"/>
+      <line x1="66" y1="42" x2="85" y2="42"/>
+      <line x1="89" y1="42" x2="108" y2="42"/>
+      <line x1="66" y1="84" x2="108" y2="84"/>
+      <line x1="124" y1="5" x2="124" y2="37"/>
+      <line x1="124" y1="47" x2="124" y2="79"/>
+      <line x1="176" y1="5" x2="176" y2="37"/>
+      <line x1="176" y1="47" x2="176" y2="79"/>
+      <line x1="124" y1="6" x2="147" y2="38"/>
+      <line x1="153" y1="46" x2="176" y2="78"/>
+      <line x1="190" y1="5" x2="190" y2="37"/>
+      <line x1="190" y1="47" x2="190" y2="79"/>
+      <line x1="190" y1="42" x2="237" y2="0"/>
+      <line x1="190" y1="42" x2="237" y2="84"/>
+      <line x1="258" y1="0" x2="300" y2="0"/>
+      <line x1="305" y1="5" x2="305" y2="37"/>
+      <line x1="305" y1="47" x2="305" y2="79"/>
+      <line x1="258" y1="84" x2="300" y2="84"/>
+      <line x1="253" y1="47" x2="253" y2="79"/>
+      <line x1="253" y1="5" x2="253" y2="37"/>
+      <line x1="326" y1="0" x2="368" y2="0"/>
+      <line x1="373" y1="5" x2="373" y2="37"/>
+      <line x1="373" y1="47" x2="373" y2="79"/>
+      <line x1="326" y1="84" x2="368" y2="84"/>
+      <line x1="321" y1="47" x2="321" y2="79"/>
+      <line x1="321" y1="5" x2="321" y2="37"/>
+      <line x1="326" y1="42" x2="368" y2="42"/>
+      <line x1="394" y1="0" x2="436" y2="0"/>
+      <line x1="441" y1="5" x2="441" y2="37"/>
+      <line x1="441" y1="47" x2="441" y2="79"/>
+      <line x1="394" y1="84" x2="436" y2="84"/>
+      <line x1="389" y1="47" x2="389" y2="79"/>
+      <line x1="389" y1="5" x2="389" y2="37"/>
+    </g>
+  </svg>
+  <p class="tagline">Quantitative engineering for markets that don't forgive.</p>
+  <div class="corner-left"></div>
+  <div class="corner">Dubai · UAE · 2026</div>
+</section>
+
+<!-- ══════════════════════ SLIDE 2: WHO WE ARE ══════════════════════ -->
+<section class="slide">
+  <div class="slide-body">
+    <div class="slide-head">
+      <p class="eyebrow">01 / Who we are</p>
+      <h1>A boutique for desks where decimals are dangerous.</h1>
+    </div>
+    <p class="lede">
+      Kenkobo Development is a Dubai‑based quantitative research and infrastructure firm. We design market‑making strategies, high‑fidelity simulators, and real‑time data systems for trading desks and product teams whose performance is measured in microseconds and basis points.
+    </p>
+    <p class="lede" style="margin-top: 12pt;">
+      Our principals have run live capital up to 40 % of market volume on individual instruments, rebuilt commercial simulators to recover order‑level state from sparse snapshots, and shipped real‑time ML data pipelines at internet‑search scale.
+    </p>
+    <div class="facts-row">
+      <div class="fact">
+        <div class="label">Founded</div>
+        <div class="value">Dubai, 2026</div>
+      </div>
+      <div class="fact">
+        <div class="label">Registered</div>
+        <div class="value">Meydan Free Zone</div>
+      </div>
+      <div class="fact">
+        <div class="label">Focus</div>
+        <div class="value">Quant R&amp;D &amp; Infrastructure</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span>Kenkobo Development LLC‑FZ</span>
+    <span>02 <span class="sep">/</span> 11</span>
+  </div>
+</section>
+
+<!-- ══════════════════════ SLIDE 3: SERVICES OVERVIEW ══════════════════════ -->
+<section class="slide">
+  <div class="slide-body">
+    <div class="slide-head">
+      <p class="eyebrow">02 / Services</p>
+      <h1>Six practice areas. Shipped to production.</h1>
+    </div>
+    <div class="svc-grid">
+      <article>
+        <span class="tag">01</span>
+        <h3>Market‑Making Strategy R&amp;D</h3>
+        <p>RL and neural‑network MM models for futures and crypto. From simulator prototype to live capital.</p>
+      </article>
+      <article>
+        <span class="tag">02</span>
+        <h3>High‑Fidelity Simulators</h3>
+        <p>Reconstruction of order‑level state from 500 ms commercial snapshots. Sim‑to‑prod parity.</p>
+      </article>
+      <article>
+        <span class="tag">03</span>
+        <h3>Crypto Market Infrastructure</h3>
+        <p>MM and mid‑frequency strategies for centralised crypto exchanges. Binance‑class connectivity.</p>
+      </article>
+      <article>
+        <span class="tag">04</span>
+        <h3>Real‑Time ML Data Pipelines</h3>
+        <p>Online feature aggregation over Real‑Time MapReduce. Low‑latency feature stores at scale.</p>
+      </article>
+      <article>
+        <span class="tag">05</span>
+        <h3>Microstructure &amp; Capacity Analytics</h3>
+        <p>Order‑book studies, capacity modelling, slippage attribution. We know where the ceiling is.</p>
+      </article>
+      <article>
+        <span class="tag">06</span>
+        <h3>Algorithmic Consulting</h3>
+        <p>Code &amp; architecture review, performance audits, technical due diligence, hiring assessment.</p>
+      </article>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span>Kenkobo Development LLC‑FZ</span>
+    <span>03 <span class="sep">/</span> 11</span>
+  </div>
+</section>
+
+<!-- ══════════════════════ SLIDE 4: MM DEEP-DIVE ══════════════════════ -->
+<section class="slide">
+  <div class="slide-body">
+    <div class="slide-head">
+      <p class="eyebrow">03 / Service deep‑dive · 01</p>
+      <h2>Market‑Making Strategy R&amp;D</h2>
+    </div>
+    <div class="deep">
+      <div class="left">
+        <div class="metric">≤ 40 %</div>
+        <div class="metric-caption">of market volume captured on individual Chinese futures instruments in live production.</div>
+      </div>
+      <div class="right">
+        <ul>
+          <li>Built from scratch using reinforcement learning and neural networks — profitable in simulation and live.</li>
+          <li>Scaled to nearly every futures contract across all Chinese exchanges.</li>
+          <li>Resilient under regulatory change. Competitors recalibrated each cycle; ours needed only routine tuning, and outperformed.</li>
+          <li>Same toolkit extended to centralised crypto exchanges, paired with mid‑term price forecasting on RL.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span>Kenkobo Development LLC‑FZ</span>
+    <span>04 <span class="sep">/</span> 11</span>
+  </div>
+</section>
+
+<!-- ══════════════════════ SLIDE 5: SIMULATORS DEEP-DIVE ══════════════════════ -->
+<section class="slide">
+  <div class="slide-body">
+    <div class="slide-head">
+      <p class="eyebrow">04 / Service deep‑dive · 02</p>
+      <h2>High‑Fidelity Simulators</h2>
+    </div>
+    <div class="deep">
+      <div class="left">
+        <p class="lede" style="margin-bottom: 10pt;">Commercial market‑data feeds publish order‑book snapshots every 500 ms. Between snapshots, the order flow is invisible — and naive simulators fill that gap with assumptions that diverge from live behaviour.</p>
+        <div class="diagram">snapshot t   ┐
+             │   modelled
+             │   solution
+             │   space
+snapshot t+1 ┘   →   order‑level
+                     reconstruction
+                     →   sim‑to‑prod
+                         parity</div>
+      </div>
+      <div class="right">
+        <ul>
+          <li>Reconstruct the feasible order‑level state between snapshots by modelling the solution space, not interpolating.</li>
+          <li>Backtest PnL closely tracks live deployment instead of diverging on contact with the market.</li>
+          <li>Resulted in significant uplift in simulator quality and downstream PnL of strategies trained on it.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span>Kenkobo Development LLC‑FZ</span>
+    <span>05 <span class="sep">/</span> 11</span>
+  </div>
+</section>
+
+<!-- ══════════════════════ SLIDE 6: CRYPTO DEEP-DIVE ══════════════════════ -->
+<section class="slide">
+  <div class="slide-body">
+    <div class="slide-head">
+      <p class="eyebrow">05 / Service deep‑dive · 03</p>
+      <h2>Crypto Market Infrastructure</h2>
+    </div>
+    <div class="deep">
+      <div class="left">
+        <div class="metric" style="font-size: 56pt;">Binance‑class</div>
+        <div class="metric-caption">CEX connectivity, end‑to‑end. Simulator, strategy, execution — built together.</div>
+      </div>
+      <div class="right">
+        <ul>
+          <li>Bespoke simulator tailored to crypto exchange microstructure — not a futures sim retrofitted.</li>
+          <li>Market‑making strategy paired with mid‑term price forecasting on reinforcement learning.</li>
+          <li>Profitable in simulation and in live deployment against a tier‑one centralised crypto exchange.</li>
+          <li>Extendable to DEX venues and cross‑venue arbitrage with shared infrastructure.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span>Kenkobo Development LLC‑FZ</span>
+    <span>06 <span class="sep">/</span> 11</span>
+  </div>
+</section>
+
+<!-- ══════════════════════ SLIDE 7: ML PIPELINES DEEP-DIVE ══════════════════════ -->
+<section class="slide">
+  <div class="slide-body">
+    <div class="slide-head">
+      <p class="eyebrow">06 / Service deep‑dive · 04</p>
+      <h2>Real‑Time ML Data Pipelines</h2>
+    </div>
+    <div class="deep">
+      <div class="left">
+        <div class="metric" style="font-size: 60pt;">search‑scale</div>
+        <div class="metric-caption">Online click aggregation, sub‑second freshness, predictable cost.</div>
+      </div>
+      <div class="right">
+        <ul>
+          <li>Production click‑aggregation pipeline built on Real‑Time MapReduce.</li>
+          <li>Feeds online ML ranking models for one of the world's largest search engines.</li>
+          <li>Low‑latency feature store patterns transfer cleanly to quantitative trading signals.</li>
+          <li>We design for sub‑second freshness, deterministic cost, and graceful degradation.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span>Kenkobo Development LLC‑FZ</span>
+    <span>07 <span class="sep">/</span> 11</span>
+  </div>
+</section>
+
+<!-- ══════════════════════ SLIDE 8: TRACK RECORD ══════════════════════ -->
+<section class="slide">
+  <div class="slide-body">
+    <div class="slide-head">
+      <p class="eyebrow">07 / Track record</p>
+      <h1>Outcomes in production.</h1>
+    </div>
+    <p class="lede" style="margin-bottom: 10pt;">Selected anonymised outcomes from our principals' prior roles and from Kenkobo engagements.</p>
+    <ul class="track">
+      <li>
+        <span class="metric">≤ 40 % vol</span>
+        <span><strong>Chinese futures market‑making.</strong> RL + neural networks, profitable in sim and prod. Scaled to nearly every contract across all Chinese exchanges.</span>
+      </li>
+      <li>
+        <span class="metric">RL · live</span>
+        <span><strong>Crypto expansion.</strong> Bespoke simulator and MM strategy with mid‑term forecasting. Live against a tier‑one centralised crypto exchange.</span>
+      </li>
+      <li>
+        <span class="metric">500 ms → ticks</span>
+        <span><strong>Simulator rebuild.</strong> Order‑level state reconstructed between commercial snapshots. Significant uplift in simulation fidelity and downstream PnL.</span>
+      </li>
+      <li>
+        <span class="metric">search‑scale</span>
+        <span><strong>Real‑time ranking data.</strong> Online click‑aggregation pipeline on Real‑Time MapReduce, powering production ML ranking at one of the world's largest search engines.</span>
+      </li>
+      <li>
+        <span class="metric">resilient</span>
+        <span><strong>Regulatory robustness.</strong> While competitors retuned each regulatory cycle in Chinese futures, our strategy required only routine recalibration — outperforming through cycles.</span>
+      </li>
+    </ul>
+  </div>
+  <div class="slide-footer">
+    <span>Kenkobo Development LLC‑FZ</span>
+    <span>08 <span class="sep">/</span> 11</span>
+  </div>
+</section>
+
+<!-- ══════════════════════ SLIDE 9: STACK ══════════════════════ -->
+<section class="slide">
+  <div class="slide-body">
+    <div class="slide-head">
+      <p class="eyebrow">08 / Stack</p>
+      <h1>Tools we reach for.</h1>
+    </div>
+    <p class="lede">Mature engineering choices — C++ where latency rules, Python for research, Rust where the two meet.</p>
+
+    <div class="chip-group">
+      <div class="group-label">Languages</div>
+      <div class="chips">
+        <span class="chip lg">C++</span>
+        <span class="chip lg">Python</span>
+        <span class="chip lg">Rust</span>
+      </div>
+    </div>
+
+    <div class="chip-group">
+      <div class="group-label">Quantitative</div>
+      <div class="chips">
+        <span class="chip">Statistics</span>
+        <span class="chip">Mathematical Modelling</span>
+        <span class="chip">Market Microstructure</span>
+        <span class="chip">Reinforcement Learning</span>
+        <span class="chip">Neural Networks</span>
+      </div>
+    </div>
+
+    <div class="chip-group">
+      <div class="group-label">Systems</div>
+      <div class="chips">
+        <span class="chip">Linux</span>
+        <span class="chip">Git</span>
+        <span class="chip">Algorithms</span>
+        <span class="chip">Data Structures</span>
+        <span class="chip">Real‑Time MapReduce</span>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span>Kenkobo Development LLC‑FZ</span>
+    <span>09 <span class="sep">/</span> 11</span>
+  </div>
+</section>
+
+<!-- ══════════════════════ SLIDE 10: LEADERSHIP ══════════════════════ -->
+<section class="slide">
+  <div class="slide-body">
+    <div class="slide-head">
+      <p class="eyebrow">09 / Leadership</p>
+      <h1>Vasilii Mokin <span style="color: var(--ink-faint); font-weight: 400;">— Founder &amp; CEO</span></h1>
+    </div>
+    <div class="leader">
+      <div class="bio">
+        <p>MSc in Mathematics, graduated with honours — Faculty of Mechanics and Mathematics, Functional Analysis Division. Nine years of quantitative research and trading systems on the buy side and at internet‑search scale.</p>
+        <p>Recognised by the international mathematics and competitive‑programming communities as a top‑tier problem solver: gold medallist of the International Mathematical Olympiad and the China Mathematics Olympiad, Codeforces International Grandmaster (peak rating 2990, top‑50 worldwide).</p>
+        <p>Jury member and problem author for mathematics olympiads. Author of several competitive programming contests.</p>
+      </div>
+      <div class="achievements">
+        <div class="ach"><strong>2010</strong> IMO — Gold Medal</div>
+        <div class="ach"><strong>2009</strong> China Math Olympiad — Gold Medal</div>
+        <div class="ach"><strong>2014</strong> International Student Olympiad, Iran — First Prize</div>
+        <div class="ach"><strong>2011</strong> IMC for University Students — Second Prize</div>
+        <div class="ach"><strong>2008, 2010</strong> Russian Math Olympiad — I diploma</div>
+        <div class="ach"><strong>2012–2016</strong> ACM ICPC NEERC — I diploma (×4)</div>
+        <div class="ach"><strong>peak 2990</strong> Codeforces — International Grandmaster, top‑50</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span>Kenkobo Development LLC‑FZ</span>
+    <span>10 <span class="sep">/</span> 11</span>
+  </div>
+</section>
+
+<!-- ══════════════════════ SLIDE 11: CONTACT ══════════════════════ -->
+<section class="slide">
+  <div class="slide-body">
+    <div class="slide-head">
+      <p class="eyebrow">10 / Contact</p>
+    </div>
+    <div class="contact">
+      <div class="lhs">
+        <h1>Get in touch.</h1>
+        <p class="sub">For engagements, partnerships, or a second opinion on a quant problem you're stuck on — we read everything.</p>
+      </div>
+      <div class="rhs">
+        <div class="row">
+          <div class="label">Company</div>
+          <div class="value">Kenkobo Development LLC‑FZ</div>
+        </div>
+        <div class="row">
+          <div class="label">Address</div>
+          <div class="value small">Meydan Free Zone<br>Dubai, United Arab Emirates</div>
+        </div>
+        <div class="row">
+          <div class="label">Phone</div>
+          <div class="value">+971 58 145 2258</div>
+        </div>
+        <div class="row">
+          <div class="label">Email</div>
+          <div class="value">kenkobodev@gmail.com</div>
+        </div>
+        <div class="row">
+          <div class="label">Telegram</div>
+          <div class="value">@b4zzzzz</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span>Kenkobo Development LLC‑FZ <span class="sep">·</span> Dubai, UAE</span>
+    <span>11 <span class="sep">/</span> 11</span>
+  </div>
+</section>
+
+</body>
+</html>

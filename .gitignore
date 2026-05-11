@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# Private / internal artifacts — not for public repo
+My_CV_260204_030111.pdf
+plan.md
+
+# Editor swap
+*.swp
+*.swo
+
+# Dependencies (just in case)
+node_modules/
+
+# Env
+.env
+.env.local
